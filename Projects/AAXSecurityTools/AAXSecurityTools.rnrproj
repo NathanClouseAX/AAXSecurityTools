@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <BuildTasksDirectory Condition=" '$(BuildTasksDirectory)' == ''">$(MSBuildProgramFiles32)\MSBuild\Microsoft\Dynamics\AX</BuildTasksDirectory>
+    <Model>AAXSecurityTools</Model>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <OutputPath>bin</OutputPath>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{7ce61062-b364-455c-8b93-00081dc4da60}</ProjectGuid>
+    <Name>AAXSecurityTools</Name>
+    <RootNamespace>AAXSecurityTools</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <Configuration>Debug</Configuration>
+    <DBSyncInBuild>False</DBSyncInBuild>
+    <GenerateFormAdaptors>False</GenerateFormAdaptors>
+    <Company>
+    </Company>
+    <Partition>initial</Partition>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DataEntityExpandParentChildRelations>False</DataEntityExpandParentChildRelations>
+    <DataEntityUseLabelTextAsFieldName>False</DataEntityUseLabelTextAsFieldName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="FormExtensions" />
+    <Folder Include="Classes" />
+    <Folder Include="TableExtensions" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="AxClass\SysSecUserAddRolesAAX_Extension">
+      <SubType>Content</SubType>
+      <Name>SysSecUserAddRolesAAX_Extension</Name>
+      <Link>Classes\SysSecUserAddRolesAAX_Extension</Link>
+    </Content>
+    <Content Include="AxFormExtension\SysUserManagement.AAXSecurityTools">
+      <SubType>Content</SubType>
+      <Name>SysUserManagement.AAXSecurityTools</Name>
+      <Link>FormExtensions\SysUserManagement.AAXSecurityTools</Link>
+    </Content>
+    <Content Include="AxTableExtension\SysUserInfo.AAXSecurityTools">
+      <SubType>Content</SubType>
+      <Name>SysUserInfo.AAXSecurityTools</Name>
+      <Link>TableExtensions\SysUserInfo.AAXSecurityTools</Link>
+    </Content>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.Common.targets" />
+  <Import Project="$(BuildTasksDirectory)\Microsoft.Dynamics.Framework.Tools.BuildTasks.targets" />
+</Project>

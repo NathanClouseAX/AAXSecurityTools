@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxFormExtension xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns="Microsoft.Dynamics.AX.Metadata.V6">
+	<Name>SysUserManagement.AAXSecurityTools</Name>
+	<ControlModifications />
+	<Controls>
+		<AxFormExtensionControl xmlns="">
+			<Name>FormExtensionControljnwxntsv1</Name>
+			<FormControl xmlns=""
+				i:type="AxFormCheckBoxControl">
+				<Name>Detail_CompanyRestrictions</Name>
+				<Type>CheckBox</Type>
+				<FormControlExtension
+					i:nil="true" />
+				<DataField>CompanyRestrictions</DataField>
+				<DataSource>SysUserInfo</DataSource>
+				<Label>User Role Company Restrictions :</Label>
+			</FormControl>
+			<Parent>GeneralDetails</Parent>
+		</AxFormExtensionControl>
+	</Controls>
+	<DataSourceModifications />
+	<DataSourceReferences />
+	<DataSources>
+		<AxFormDataSource xmlns="">
+			<Name>SysUserInfo</Name>
+			<Table>SysUserInfo</Table>
+			<Fields>
+				<AxFormDataSourceField>
+					<DataField>AutomaticUrlUpdate</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>compilerTarget</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>DefaultCountryRegion</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>defaultExcelExportPath</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>defaultExcelExportSite</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>DEL_generateExecutionPlan</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>Density</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>docuHandlingActive</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>docuToolbarButtonActive</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>Email</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>EnhancedTabSequence</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>EventEmailAlertsWhen</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>EventPollFrequency</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>EventPopUpDisplayWhen</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>EventPopUpLinkDestination</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>EventPopUps</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>EventWorkflowShowPopup</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>EventWorkflowTasksInActionCenter</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>EventWorkflowTasksInClient</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>EventWorkflowTasksInEmail</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>HelpMarkEmptyLinks</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>HelpTheme</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>Id</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>Language</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>Mailer</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>Partition</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>RecId</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>SqmEnabled</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>SqmUserGuid</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>StartPage</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>TableId</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>Theme</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>WorkflowLineItemNotificationFormat</DataField>
+				</AxFormDataSourceField>
+			</Fields>
+			<ReferencedDataSources />
+			<JoinSource>UserInfo</JoinSource>
+			<DataSourceLinks />
+			<DerivedDataSources />
+		</AxFormDataSource>
+	</DataSources>
+	<Parts />
+	<PropertyModifications />
+</AxFormExtension>
