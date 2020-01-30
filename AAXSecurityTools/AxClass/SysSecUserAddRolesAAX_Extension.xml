@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxClass xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>SysSecUserAddRolesAAX_Extension</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+[ExtensionOf(formStr(SysSecUserAddRoles))]
+final class SysSecUserAddRolesAAX_Extension
+{
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>assignRolesToSelectedUser</Name>
+				<Source><![CDATA[
+    public void assignRolesToSelectedUser()
+    {
+        OMUserRoleOrganization org;
+        SysUserInfo sysUserInfo;
+        SecurityUserRole userRole;
+        SecurityUserRoleCondition userRoleCondition;
+        OMLegalEntity legalEntity;
+        SecurityRole secRole;
+        OMHierarchyRelationship hr;
+        Set companyList = new Set(Types::Int64);
+        Set hierarchyCompanyList = new Set(Types::Int64);
+        Set hierarchyList = new Set(Types::Int64);
+        SetEnumerator se;
+        str outputRoleList = "Roles assigned to user: ";
+        str outputCompanyList = "User role assignment restricted to these companies: ";
+        boolean saveToOutputString = true;
+
+        //execute base method
+        next assignRolesToSelectedUser();
+
+        //get
+        str currentUser = curUserId();
+        str _userId = userId;
+        int64 _securityRoleId = securityRole.RecId;
+        int64 _userSecurityRoleId = 0;
+        
+        //get company restrictions assigned to user performing user role assignment
+        while select OmHierarchyType, OmInternalOrganization from org
+            join sysUserInfo
+            where sysUserInfo.CompanyRestrictions == NoYes::Yes
+            && sysUserInfo.Id == currentUser
+            && org.User == currentUser
+            && org.OMHierarchyType == 0
+        {
+            companyList.add(org.OMInternalOrganization);
+        }
+
+        //check if user is assigned a security organizational hierarchy
+        while select OMHierarchyType from org
+            join sysUserInfo
+            where sysUserInfo.CompanyRestrictions == NoYes::Yes
+            && sysUserInfo.Id == currentUser
+            && org.User == currentUser
+            && org.OMHierarchyType != 0
+        {
+            hierarchyList.add(org.OMHierarchyType);
+        }
+
+        se = hierarchyList.getEnumerator();
+        while(se.moveNext())
+        {
+            int64 hierarchyId = se.current();
+            Set legalEntities = new Set(Types::Int64);
+            SetEnumerator se_le;
+            
+            while select ChildOrganization from hr
+                where hr.HierarchyType == hierarchyId
+            {
+                select firstfast RecId from legalEntity where legalEntity.RecId == hr.ChildOrganization;
+                if(legalEntity)
+                {
+                    companyList.add(legalEntity.RecId);
+                    hierarchyCompanyList.add(legalEntity.RecId);
+                }
+            }       
+        }
+
+        //Iterate through roles just assigned to the user
+        secRole = securityRole_ds.getFirst(true);
+
+        while(secRole)
+        {
+            select RecId, SecurityRole, User from userRole
+                where userRole.SecurityRole == secRole.RecId &&
+                    userRole.User == _userId;
+            
+            if(userRole)
+            {
+                _userSecurityRoleId = userRole.RecId;
+
+                //Insert hierarchy into OmUserRoleOrganization
+                //Need to insert just one record per hierarchy
+                if(hierarchyList.elements() > 0)
+                {
+                    se = hierarchyList.getEnumerator();
+                    
+                    ttsbegin;
+                    while(se.moveNext())
+                    {
+                        int64 hierarchyId = se.current();
+                        select firstfast ChildOrganization from hr
+                            where hr.ParentOrganization == 0 && hr.HierarchyType == hierarchyId;
+                        if(hr)
+                        {
+                            org.User = _userId;
+                            org.SecurityRole = secRole.RecId;
+                            org.SecurityRoleAssignmentRule = 0;
+                            org.omInternalOrganization = hr.ChildOrganization;
+                            org.omHierarchyType = hierarchyId;
+                            org.insert();
+                        }
+                    }
+                    ttscommit;
+                }
+
+                //now assign company restrictions
+                if(companyList.elements() > 0)
+                {
+                    se = companyList.getEnumerator();
+               
+                    ttsbegin;
+                    while(se.moveNext())
+                    {
+                        int64 compId = se.current();
+
+                        //OmUserRoleOrganization
+                        if(!hierarchyCompanyList.in(compId))
+                        {
+                            org.User = _userId;
+                            org.SecurityRole = secRole.RecId;
+                            org.SecurityRoleAssignmentRule = 0;
+                            org.omInternalOrganization = compId;
+                            org.omHierarchyType = 0;
+                            org.insert();
+                        }
+
+                        //SecurityUserRoleCondition
+                        select firstfast LegalEntityId from legalEntity where legalEntity.RecId == compId;
+                        if(legalEntity)
+                        {
+                            str comp = legalEntity.LegalEntityId;
+
+                            userRoleCondition.SecurityUserRole = _userSecurityRoleId;
+                            userRoleCondition.DataArea = comp;
+                            userRoleCondition.insert();
+
+                            if(saveToOutputString)
+                            {
+                                outputCompanyList = strFmt("%1 %2,", outputCompanyList, comp);
+                            }
+                        }
+                    }
+                    ttscommit;
+                }
+                saveToOutputString = false;
+
+            }
+            outputRoleList = strFmt("%1 %2,", outputRoleList, secRole.Name);
+            secRole = securityRole_ds.getNext() as SecurityRole;
+        }
+
+        if(companyList.elements() > 0)
+        {
+            info(outputRoleList);
+            info(outputCompanyList);
+        }
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+</AxClass>
