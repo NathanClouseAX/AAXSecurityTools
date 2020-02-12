@@ -10,6 +10,11 @@
 			<Name>CompanyRestrictions</Name>
 			<EnumType>NoYes</EnumType>
 		</AxTableField>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldString">
+			<Name>AAXSysSecOrgAssignmentTemplateName</Name>
+			<ExtendedDataType>AAXSysSecOrgAssignmentTemplateName</ExtendedDataType>
+		</AxTableField>
 	</Fields>
 	<FullTextIndexes />
 	<Indexes />
@@ -17,5 +22,23 @@
 	<PropertyModifications />
 	<RelationExtensions />
 	<RelationModifications />
-	<Relations />
+	<Relations>
+		<AxTableRelation>
+			<Name>AAXSysSecOrgAssignmentTemplate</Name>
+			<Cardinality>ZeroOne</Cardinality>
+			<EDTRelation>Yes</EDTRelation>
+			<RelatedTable>AAXSysSecOrgAssignmentTemplate</RelatedTable>
+			<RelatedTableCardinality>ZeroOne</RelatedTableCardinality>
+			<RelationshipType>Association</RelationshipType>
+			<Constraints>
+				<AxTableRelationConstraint xmlns=""
+					i:type="AxTableRelationConstraintField">
+					<Name>AAXSysSecOrgAssignmentTemplateName</Name>
+					<SourceEDT>AAXSysSecOrgAssignmentTemplate</SourceEDT>
+					<Field>AAXSysSecOrgAssignmentTemplateName</Field>
+					<RelatedField>Name</RelatedField>
+				</AxTableRelationConstraint>
+			</Constraints>
+		</AxTableRelation>
+	</Relations>
 </AxTableExtension>

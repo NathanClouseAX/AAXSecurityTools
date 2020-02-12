@@ -1,0 +1,1077 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxForm xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns="Microsoft.Dynamics.AX.Metadata.V6">
+	<Name>AAXSysSecOrgAssignmentTemplate</Name>
+	<SourceCode>
+		<Methods xmlns="">
+			<Method>
+				<Name>classDeclaration</Name>
+				<Source><![CDATA[
+[Form]
+public class AAXSysSecOrgAssignmentTemplate extends FormRun
+{
+
+    #resAppl
+    #SysSecUI
+    #define.GRAY_TEXT(13160660)
+    int                         treeGroupBackgroundColor;
+    Object                      caller;
+    Object                      part;
+    boolean                     isUserRoleMode;
+    SecurityRoleAssignmentRule  rule;
+    SecurityUserRole            userRole;
+    userId                      userId;
+    RefRecId                    roleId;
+    RefRecId                    assignmentRuleId;
+    RefRecId                    hierarchyId;
+    [FormObservable]
+    Caption                     formCaption;
+    Name                        allCompaniesHierarchyName;
+    SysSecHelper                helper;
+    boolean                     isReadOnlyMode;
+
+    private const int selGrantWithChildren = 1;
+    private const int selGrant = 2;
+
+    private const int selRevoke = 1;
+    private const int selViewHierarchy = 2;
+
+}
+]]></Source>
+			</Method>
+			<Method>
+				<Name>addOrganization</Name>
+				<Source><![CDATA[
+    public void addOrganization(boolean _withChildren)
+    {
+        OMUserRoleOrganization org;
+        FormTreeItem item;
+        TreeItemIdx idx = organizationTree.getFirstSelected();
+        RefRecId organizationId;
+
+        if (!idx)
+            return;
+
+        item = organizationTree.getItem(idx);
+        organizationId = item.data();
+
+        if (isUserRoleMode)
+        {
+            select firstonly org
+            where
+                org.User == userId &&
+                org.SecurityRole == roleId &&
+                org.omInternalOrganization == organizationId &&
+                org.omHierarchyType == hierarchyId;
+        }
+        else
+        {
+            select firstonly org
+            where
+                org.SecurityRoleAssignmentRule == assignmentRuleId &&
+                org.omInternalOrganization == organizationId &&
+                org.omHierarchyType == hierarchyId;
+        }
+
+        if (org)
+            return;
+
+        // Check the id of the role to add
+        if ((roleId == 0) && (assignmentRuleId == 0))
+        {
+            error("@SYS338939"); // Error used role is not assigned to selected user
+            return;
+        }
+
+        ttsbegin;
+        org.User = userId;
+        org.SecurityRole = roleId;
+        org.SecurityRoleAssignmentRule = assignmentRuleId;
+        org.omInternalOrganization = organizationId;
+        org.omHierarchyType = (_withChildren) ? hierarchyId : 0;
+        /*
+
+        element.userRoleChange(org.SecurityRole,
+                                org.omInternalOrganization,
+                                org.User,
+                                AddRemove::Add);
+
+        org.insert();
+        ttscommit;
+        omUserRoleOrganization_ds.research(true);
+        */
+        element.enableButtons();
+        element.updatePart();
+
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>buildHierarchyList</Name>
+				<Source><![CDATA[
+    private void buildHierarchyList()
+    {
+        OMHierarchyType     hierarchy;
+        OMHierarchyPurpose  purpose;
+
+        allCompaniesHierarchyName = "@SYS332628";
+        
+        hierarchyCombo.clear();
+        hierarchyCombo.add(allCompaniesHierarchyName);
+
+        while select Name from hierarchy exists join purpose
+            where purpose.HierarchyPurpose == HierarchyPurpose::Security && purpose.HierarchyType == hierarchy.RecId
+        {
+            hierarchyCombo.add(hierarchy.Name);
+        }
+        
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>canClose</Name>
+				<Source><![CDATA[
+    public boolean canClose()
+    {
+        OMUserRoleOrganization org;
+        //OrganizationAccess selection = grantAccessRadioButton.selection();
+        
+        boolean ret = super();
+        /*
+        if (ret)
+        {
+            if (selection == OrganizationAccess::Organization)
+            {
+                if (isUserRoleMode)
+                {
+                    select firstonly org where org.User == userId && org.SecurityRole == roleId;
+                }
+                else
+                {
+                    select firstonly org where org.SecurityRoleAssignmentRule == assignmentRuleId;
+                }
+                if (!org)
+                {
+                    ret = (Box::yesNo(strFmt("@SYS332627", "@SYS332626"), DialogButton::No) == DialogButton::Yes);
+                }
+            }
+        }
+        */
+
+        return ret;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>close</Name>
+				<Source><![CDATA[
+    public void close()
+    {
+        super();
+        SysSecurityDynamicRoleAssignment::synchronize(roleId);
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>enableButtons</Name>
+				<Source><![CDATA[
+    public void enableButtons()
+    {
+        TreeItemIdx idx;
+        FormTreeItem item;
+        RefRecId recId =  0;
+        boolean enableGrantWithChildren;
+        boolean enableGrant;
+        boolean enableRevoke;
+        OMUserRoleOrganization org;
+
+        if (isReadOnlyMode || !buttons.enabled())
+            return;
+
+        idx = organizationTree.getFirstSelected();
+        item = (idx) ? organizationTree.getItem(idx) : null;
+        //enableRevoke = (omUserRoleOrganization.RecId != 0);
+
+        enableGrant = (item != null);
+        if (enableGrant)
+        {
+            recId = item.data();
+            if (isUserRoleMode)
+            {
+                select firstonly RecId from org
+                where
+                    org.User == userId &&
+                    org.SecurityRole == roleId &&
+                    org.omHierarchyType == hierarchyId &&
+                    org.omInternalOrganization == recId;
+            }
+            else
+            {
+                select firstonly RecId from org
+                where
+                    org.SecurityRoleAssignmentRule == assignmentRuleId &&
+                    org.omHierarchyType == hierarchyId &&
+                    org.omInternalOrganization == recId;
+            }
+            enableGrant = (org.RecId == 0);
+        }
+
+        enableGrantWithChildren = enableGrant && (hierarchyId != 0) ;
+
+        grantWithChildren.enabled(enableGrantWithChildren);
+        grant.enabled(enableGrant);
+        revoke.enabled(enableRevoke);
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>enableTreeGroup</Name>
+				<Source><![CDATA[
+    public void enableTreeGroup(boolean _enable)
+    {
+        //grantAccessRadioButton.enabled(!isReadOnlyMode);
+        //grantAccessRadioButton.allowEdit(!isReadOnlyMode);
+
+        if (_enable)
+        {
+            //hierarchyCombo.enabled(!isReadOnlyMode);
+            organizationTree.enabled(!isReadOnlyMode);
+            /* organizationTree.backgroundColor(isReadOnlyMode ? 13160660 : treeGroupBackgroundColor) *//* TODO: (Code Upgrade) Remove the use of the deprecated property backgroundColor. */
+            //grid.enabled(!isReadOnlyMode);
+            buttons.enabled(!isReadOnlyMode);
+        }
+        else
+        {
+            //hierarchyCombo.enabled(false);
+            organizationTree.enabled(false);
+            /* organizationTree.backgroundColor(13160660) *//* TODO: (Code Upgrade) Remove the use of the deprecated property backgroundColor. */
+            //grid.enabled(false);
+            buttons.enabled(false);
+        }
+        element.enableButtons();
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>fillTree</Name>
+				<Source><![CDATA[
+    public void fillTree()
+    {
+        CompanyInfo ci;
+        OMHierarchyRelationship relationship;
+        OMInternalOrganization  organization;
+        boolean hasChildren;
+
+        organizationTree.deleteAll();
+
+        if (!hierarchyId)
+        {
+            while select Name, RecId from ci
+            {
+                SysFormTreeControl::addTreeItem(
+                    organizationTree,
+                    ci.Name,
+                    FormTreeAdd::Root,
+                    ci.RecId,
+                    element.getImage(ci.RecId),
+                    false);
+            }
+        }
+        else
+        {
+            while select ChildOrganization from relationship
+                where relationship.ParentOrganization == 0 && relationship.HierarchyType == hierarchyId
+                join Name from organization where organization.RecId == relationship.ChildOrganization
+            {
+                hasChildren = ((select firstonly omHierarchyRelationship
+                                where omHierarchyRelationship.ParentOrganization == relationship.ChildOrganization &&
+                                    omHierarchyRelationship.HierarchyType == hierarchyId).RecId != 0);
+                SysFormTreeControl::addTreeItem(
+                    organizationTree,
+                    organization.Name,
+                    FormTreeAdd::Root,
+                    relationship.ChildOrganization,
+                    element.getImage(relationship.ChildOrganization),
+                    hasChildren);
+            }
+        }
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>getImage</Name>
+				<Source><![CDATA[
+    public ImageRes getImage(RefRecId _recId)
+    {
+        ImageListAppl_Aot           imageList_Security = SysSecHelper::getImageListForAdminUIs();
+        CompanyInfo company;
+        OMOperatingUnit operatingUnit;
+        int nodeType = 0, imageID = 0;
+
+        select firstonly RecId from company where company.RecId == _recId;
+        if (company)
+        {
+            nodeType =  OMHierarchyDesigner::toNodeTypeId([OMInternalOrganizationType::LegalEntity, OMOperatingUnitType::None]);
+        }
+        else
+        {
+            select firstonly RecId, omOperatingUnitType from operatingUnit where operatingUnit.RecId == _recId;
+            if (operatingUnit)
+            {
+                nodeType = OMHierarchyDesigner::toNodeTypeId([OMInternalOrganizationType::OperatingUnit, operatingUnit.omOperatingUnitType]);
+            }
+        }
+
+        if (nodeType > 0)
+        {
+            imageID = OMHierDesignExtClass::getNodeTypeImageID(nodeType);
+            if (imageID > 0)
+            {
+                return imageList_Security.image(imageID);
+            }
+        }
+        return 0;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>init</Name>
+				<Source><![CDATA[
+    public void init()
+    {
+        ImageListAppl_Aot           imageList_Security;
+        tableId                     tableId = (this.args()) ? this.args().dataset() : 0;
+        SecurityRole                titleRole;
+        OMInternalOrganizationTmpType       internalOrganizationTmpType;
+        internalOrganizationTmpType         = OMInternalOrganizationTmpType::insertInternalOrganizationTypes(true);
+
+        /*
+        switch (tableId)
+        {
+            case tableNum(SecurityUserRole):
+                isUserRoleMode = true;
+                userRole = this.args().record();
+                roleId = userRole.SecurityRole;
+                assignmentRuleId = 0;
+                userId = userRole.User;
+                roleId = userRole.SecurityRole;
+                select Name from titleRole where titleRole.RecId == roleId;
+                formCaption = strFmt("@SYS332620", userRole.User, titleRole.Name);
+                if (userRole.AssignmentMode == RoleAssignmentMode::Automatic)
+                {
+                    element.setReadOnlyMode();
+                }
+                break;
+
+            case tableNum(SecurityRoleAssignmentRule):
+                isUserRoleMode = false;
+                rule = this.args().record();
+                this.args().record(null);
+                roleId = rule.SecurityRole;
+                assignmentRuleId = rule.RecId;
+                userId = '';
+                select Name from titleRole where titleRole.RecId == roleId;
+                formCaption = strFmt("@SYS332621", rule.MembershipRuleName, titleRole.Name);
+                break;
+
+            default:
+                throw error("@SYS87832");
+        }
+        */
+
+        super();
+
+        // null out the record so it does not affect the caption
+        this.args().record(null);
+        element.design().caption(formCaption);
+        /*
+        if (isUserRoleMode)
+        {
+            radioGroup.caption("@SYS332646");
+            omUserRoleOrganization_ds.query().dataSourceTable(tableNum(OMUserRoleOrganization)).addRange(fieldNum(OMUserRoleOrganization, User)).value(queryValue(userRole.User));
+            omUserRoleOrganization_ds.query().dataSourceTable(tableNum(OMUserRoleOrganization)).addRange(fieldNum(OMUserRoleOrganization, SecurityRole)).value(queryValue(userRole.SecurityRole));
+        }
+        else
+        {
+            radioGroup.caption("@SYS332619");
+            omUserRoleOrganization_ds.query().dataSourceTable(tableNum(OMUserRoleOrganization)).addRange(fieldNum(OMUserRoleOrganization, SecurityRoleAssignmentRule)).value(queryValue(rule.RecId));
+        }
+        */
+
+        caller = element.args() ? element.args().caller() : null;
+
+        treeGroupBackgroundColor = organizationTree.backgroundColor();
+        imageList_Security = SysSecHelper::getImageListForAdminUIs();
+
+        while select * from  internalOrganizationTmpType
+        {
+            imageList_Security.add(OMHierDesignExtClass::getNodeTypeImageID(OMHierarchyDesigner::toNodeTypeId(
+                    [OMInternalOrganizationType::OperatingUnit,internalOrganizationTmpType.OperatingUnitType])));
+        }
+
+        imageList_Security.add(OMHierDesignExtClass::getNodeTypeImageID(OMHierarchyDesigner::toNodeTypeId(
+            [OMInternalOrganizationType::LegalEntity,OMOperatingUnitType::None])));
+        organizationTree.setImagelist(imageList_Security.imageList());
+        this.refreshForm();
+        
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>refreshForm</Name>
+				<Source><![CDATA[
+    private void refreshForm()
+    {
+        this.buildHierarchyList();
+        this.fillTree();
+        //omUserRoleOrganization_ds.executeQuery();
+        element.enableTreeGroup(false);
+        //grantAccessRadioButton.setInitialValue();
+        this.fillTree();
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>registerForChange</Name>
+				<Source><![CDATA[
+    public boolean registerForChange(Object _part)
+    {
+        part = _part;
+        element.updatePart();
+        return true;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>setReadOnlyMode</Name>
+				<Source><![CDATA[
+    private void setReadOnlyMode()
+    {
+        isReadOnlyMode = true;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>task</Name>
+				<Source><![CDATA[
+    public int task(int _taskId)
+    {
+        #task
+
+        switch (_taskId)
+        {
+            case #taskNew:
+                return true;
+
+            case #taskDeleteRecord:
+                return true;
+
+            case #taskF5:
+                element.refreshForm();
+                break;
+        }
+
+        return super(_taskId);
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>updatePart</Name>
+				<Source><![CDATA[
+    public void updatePart()
+    {
+        if (part)
+        {
+            part.updateSelection(userId, roleId, assignmentRuleId);
+        }
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+		<DataSources xmlns="" />
+		<DataControls xmlns="">
+			<Control>
+				<Name>hierarchyCombo</Name>
+				<Type>ComboBox</Type>
+				<Methods>
+					<Method>
+						<Name>selectionChange</Name>
+						<Source><![CDATA[
+        public int selectionChange()
+        {
+            int ret;
+            Name name = this.valueStr();
+            OMHierarchyType hierarchy;
+    
+            ret = super();
+    
+            if (name == allCompaniesHierarchyName)
+            {
+                hierarchyId = 0;
+            }
+            else
+            {
+                select firstonly RecId from hierarchy where hierarchy.Name == name;
+                hierarchyId = hierarchy.RecId;
+            }
+            element.fillTree();
+    
+            return ret;
+        }
+
+]]></Source>
+					</Method>
+				</Methods>
+			</Control>
+			<Control>
+				<Name>organizationTree</Name>
+				<Type>Tree</Type>
+				<Methods>
+					<Method>
+						<Name>endLabelEdit</Name>
+						<Source><![CDATA[
+        public void endLabelEdit(int _idx, str _text, anytype _data)
+        {
+        /*    FormTreeItem    formTreeItem = this.getItem(_idx);
+
+            // Data retrieved from SecurityRole table which
+            // is TPF protected.
+            // BP Deviation Documented
+            formTreeItem.text(_text);
+            this.setItem(formTreeItem);
+        */
+            super(_idx, _text, _data);
+        }
+
+]]></Source>
+					</Method>
+					<Method>
+						<Name>expanding</Name>
+						<Source><![CDATA[
+        public boolean expanding(int _idx, FormTreeExpand _action, anytype _data)
+        {
+            FormTreeItem            formTreeItem = this.getItem(_idx);
+            OMHierarchyRelationship relationship;
+            OMInternalOrganization  organization;
+            boolean                 hasChildren;
+            RefRecId                parentId;
+
+            if ((!formTreeItem.stateExpandedOnce()) && (formTreeItem.children()))
+            {
+                parentId = formTreeItem.data();
+
+                while select ChildOrganization from relationship
+                    where relationship.ParentOrganization == parentId && relationship.HierarchyType == hierarchyId
+                    join Name from organization where organization.RecId == relationship.ChildOrganization
+                {
+                    hasChildren = ((select firstonly omHierarchyRelationship
+                                    where omHierarchyRelationship.ParentOrganization == relationship.ChildOrganization &&
+                                        omHierarchyRelationship.HierarchyType == hierarchyId).RecId != 0);
+                    SysFormTreeControl::addTreeItem(
+                        organizationTree,
+                        organization.Name,
+                        _idx,
+                        relationship.ChildOrganization,
+                        element.getImage(relationship.ChildOrganization),
+                        hasChildren);
+                }
+            }
+
+            return false;
+        }
+
+]]></Source>
+					</Method>
+					<Method>
+						<Name>replaceIcon</Name>
+						<Source><![CDATA[
+        public void replaceIcon(FormTreeItem _item, ImageRes _newIcon)
+        {
+            _item.image(_newIcon);
+            _item.selectedImage(_newIcon);
+        }
+
+]]></Source>
+					</Method>
+					<Method>
+						<Name>selectionChanged</Name>
+						<Source><![CDATA[
+        public void selectionChanged(FormTreeItem _oldItem, FormTreeItem _newItem, FormTreeSelect _how)
+        {
+            super(_oldItem, _newItem, _how);
+            element.enableButtons();
+        }
+
+]]></Source>
+					</Method>
+					<Method>
+						<Name>getContextMenuOptions</Name>
+						<Source><![CDATA[
+        public str getContextMenuOptions()
+        {
+            boolean isButtons = buttons.enabled();
+            boolean isGrantWithChildren = grantWithChildren.enabled();
+            boolean isGrant = grant.enabled();
+
+            if (!isButtons)
+            {
+                isGrantWithChildren = false;
+                isGrant = false;
+            }
+
+            str ret;
+            ContextMenu menu = new ContextMenu();
+            ContextMenuOption optionGrantWithChildren = ContextMenuOption::Create(grantWithChildren.text(), selGrantWithChildren);
+            ContextMenuOption optionGrant = ContextMenuOption::Create(grant.text(), selGrant);
+            List menuOptions = new List(Types::Class);
+
+            if (isGrant)
+            {
+                menuOptions.addEnd(optionGrant);
+            }
+            if (isGrantWithChildren)
+            {
+                menuOptions.addEnd(optionGrantWithChildren);
+            }
+
+            menu.ContextMenuOptions(menuOptions);
+
+            return menu.Serialize();
+        }
+
+]]></Source>
+					</Method>
+					<Method>
+						<Name>selectedMenuOption</Name>
+						<Source><![CDATA[
+        public void selectedMenuOption(int selectedOption)
+        {
+            switch (selectedOption)
+            {
+                case selGrantWithChildren:
+                    grantWithChildren.clicked();
+                    break;
+                case selGrant:
+                    grant.clicked();
+                    break;
+            }
+        }
+
+]]></Source>
+					</Method>
+				</Methods>
+			</Control>
+			<Control>
+				<Name>grantWithChildren</Name>
+				<Type>Button</Type>
+				<Methods>
+					<Method>
+						<Name>clicked</Name>
+						<Source><![CDATA[
+        void clicked()
+        {
+            element.addOrganization(true);
+        }
+
+]]></Source>
+					</Method>
+				</Methods>
+			</Control>
+			<Control>
+				<Name>grant</Name>
+				<Type>Button</Type>
+				<Methods>
+					<Method>
+						<Name>clicked</Name>
+						<Source><![CDATA[
+        void clicked()
+        {
+            element.addOrganization(false);
+        }
+
+]]></Source>
+					</Method>
+				</Methods>
+			</Control>
+			<Control>
+				<Name>revoke</Name>
+				<Type>Button</Type>
+				<Methods>
+					<Method>
+						<Name>clicked</Name>
+						<Source><![CDATA[
+        void clicked()
+        {
+            /*
+            if (omUserRoleOrganization)
+            {
+                ttsbegin;
+
+                element.userRoleChange(omUserRoleOrganization.SecurityRole,
+                                        omUserRoleOrganization.omInternalOrganization,
+                                        omUserRoleOrganization.User,
+                                        AddRemove::Remove);
+
+                omUserRoleOrganization.delete();
+
+                ttscommit;
+                omUserRoleOrganization_ds.executeQuery();
+                element.enableButtons();
+                element.updatePart();
+            }
+            */
+        }
+
+]]></Source>
+					</Method>
+				</Methods>
+			</Control>
+		</DataControls>
+		<Members xmlns="" />
+	</SourceCode>
+	<DataSources>
+		<AxFormDataSource xmlns="">
+			<Name>AAXSysSecOrgAssignmentTemplate</Name>
+			<Table>AAXSysSecOrgAssignmentTemplate</Table>
+			<Fields>
+				<AxFormDataSourceField>
+					<DataField>CreatedBy</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>CreatedDateTime</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>DataAreaId</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>Description</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>Name</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>Partition</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>RecId</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>TableId</DataField>
+				</AxFormDataSourceField>
+			</Fields>
+			<ReferencedDataSources />
+			<DataSourceLinks />
+			<DerivedDataSources />
+		</AxFormDataSource>
+	</DataSources>
+	<Design>
+		<Pattern xmlns="">SimpleListDetails</Pattern>
+		<PatternVersion xmlns="">1.3</PatternVersion>
+		<Style xmlns="">SimpleListDetails</Style>
+		<Controls xmlns="">
+			<AxFormControl xmlns=""
+				i:type="AxFormActionPaneControl">
+				<Name>ActionPaneControl</Name>
+				<Type>ActionPane</Type>
+				<FormControlExtension
+					i:nil="true" />
+				<Controls />
+			</AxFormControl>
+			<AxFormControl xmlns=""
+				i:type="AxFormGroupControl">
+				<Name>FormGroupControl1</Name>
+				<HeightMode>SizeToAvailable</HeightMode>
+				<Type>Group</Type>
+				<FormControlExtension
+					i:nil="true" />
+				<Controls>
+					<AxFormControl>
+						<Name>QuickFilterControl1</Name>
+						<WidthMode>SizeToAvailable</WidthMode>
+						<FormControlExtension>
+							<Name>QuickFilterControl</Name>
+							<ExtensionComponents />
+							<ExtensionProperties>
+								<AxFormControlExtensionProperty>
+									<Name>targetControlName</Name>
+									<Type>String</Type>
+								</AxFormControlExtensionProperty>
+								<AxFormControlExtensionProperty>
+									<Name>placeholderText</Name>
+									<Type>String</Type>
+								</AxFormControlExtensionProperty>
+								<AxFormControlExtensionProperty>
+									<Name>defaultColumnName</Name>
+									<Type>String</Type>
+								</AxFormControlExtensionProperty>
+							</ExtensionProperties>
+						</FormControlExtension>
+					</AxFormControl>
+					<AxFormControl xmlns=""
+						i:type="AxFormGridControl">
+						<Name>FormGridControl1</Name>
+						<AllowEdit>No</AllowEdit>
+						<Type>Grid</Type>
+						<WidthMode>SizeToContent</WidthMode>
+						<FormControlExtension
+							i:nil="true" />
+						<Controls>
+							<AxFormControl xmlns=""
+								i:type="AxFormStringControl">
+								<Name>AAXSysSecOrgAssignmentTemplate_Name</Name>
+								<Type>String</Type>
+								<FormControlExtension
+									i:nil="true" />
+								<DataField>Name</DataField>
+								<DataSource>AAXSysSecOrgAssignmentTemplate</DataSource>
+							</AxFormControl>
+							<AxFormControl xmlns=""
+								i:type="AxFormStringControl">
+								<Name>AAXSysSecOrgAssignmentTemplate_Description</Name>
+								<Type>String</Type>
+								<FormControlExtension
+									i:nil="true" />
+								<DataField>Description</DataField>
+								<DataSource>AAXSysSecOrgAssignmentTemplate</DataSource>
+							</AxFormControl>
+						</Controls>
+						<MultiSelect>No</MultiSelect>
+						<ShowRowLabels>No</ShowRowLabels>
+						<Style>List</Style>
+					</AxFormControl>
+				</Controls>
+				<FrameType>None</FrameType>
+				<Style>SidePanel</Style>
+			</AxFormControl>
+			<AxFormControl xmlns=""
+				i:type="AxFormGroupControl">
+				<Name>FormGroupControl2</Name>
+				<Type>Group</Type>
+				<WidthMode>SizeToAvailable</WidthMode>
+				<FormControlExtension
+					i:nil="true" />
+				<Controls>
+					<AxFormControl xmlns=""
+						i:type="AxFormGroupControl">
+						<Name>FormGroupControl3</Name>
+						<Type>Group</Type>
+						<FormControlExtension
+							i:nil="true" />
+						<Controls>
+							<AxFormControl xmlns=""
+								i:type="AxFormStringControl">
+								<Name>AAXSysSecOrgAssignmentTemplate_Name1</Name>
+								<Type>String</Type>
+								<FormControlExtension
+									i:nil="true" />
+								<DataField>Name</DataField>
+								<DataSource>AAXSysSecOrgAssignmentTemplate</DataSource>
+							</AxFormControl>
+							<AxFormControl xmlns=""
+								i:type="AxFormStringControl">
+								<Name>AAXSysSecOrgAssignmentTemplate_Description1</Name>
+								<Type>String</Type>
+								<FormControlExtension
+									i:nil="true" />
+								<DataField>Description</DataField>
+								<DataSource>AAXSysSecOrgAssignmentTemplate</DataSource>
+							</AxFormControl>
+						</Controls>
+						<Columns>2</Columns>
+					</AxFormControl>
+				</Controls>
+				<FrameType>None</FrameType>
+			</AxFormControl>
+			<AxFormControl xmlns=""
+				i:type="AxFormTabControl">
+				<Name>FormTabControl1</Name>
+				<Type>Tab</Type>
+				<FormControlExtension
+					i:nil="true" />
+				<Controls>
+					<AxFormControl xmlns=""
+						i:type="AxFormTabPageControl">
+						<Name>FormTabPageControl1</Name>
+						<Type>TabPage</Type>
+						<FormControlExtension
+							i:nil="true" />
+						<Controls>
+							<AxFormControl xmlns=""
+								i:type="AxFormComboBoxControl">
+								<Name>hierarchyCombo</Name>
+								<AutoDeclaration>Yes</AutoDeclaration>
+								<ElementPosition>613566756</ElementPosition>
+								<FilterExpression>%1</FilterExpression>
+								<Height>0</Height>
+								<HeightMode>SizeToAvailable</HeightMode>
+								<HelpText>@GlobalAddressBook:FieldDescriptionsSysSecRoleAssignOM_hierarchyCombo</HelpText>
+								<Type>ComboBox</Type>
+								<VerticalSpacing>-1</VerticalSpacing>
+								<WidthMode>Auto</WidthMode>
+								<FormControlExtension
+									i:nil="true" />
+								<Label>@SYS135925</Label>
+								<Items />
+							</AxFormControl>
+							<AxFormControl xmlns=""
+								i:type="AxFormStaticTextControl">
+								<Name>StaticText</Name>
+								<ElementPosition>920350134</ElementPosition>
+								<FilterExpression>%1</FilterExpression>
+								<HeightMode>Auto</HeightMode>
+								<HelpText>@GlobalAddressBook:FieldDescriptionsSysSecRoleAssignOM_StaticText</HelpText>
+								<Type>StaticText</Type>
+								<VerticalSpacingMode>Fixed</VerticalSpacingMode>
+								<WidthMode>Auto</WidthMode>
+								<FormControlExtension
+									i:nil="true" />
+								<Text>@SYS332635</Text>
+							</AxFormControl>
+							<AxFormControl xmlns=""
+								i:type="AxFormTreeControl">
+								<Name>organizationTree</Name>
+								<AutoDeclaration>Yes</AutoDeclaration>
+								<ConfigurationKey>SysAdmin</ConfigurationKey>
+								<ElementPosition>1227133512</ElementPosition>
+								<FilterExpression>%1</FilterExpression>
+								<Height>0</Height>
+								<HeightMode>SizeToAvailable</HeightMode>
+								<Type>Tree</Type>
+								<VerticalSpacing>-1</VerticalSpacing>
+								<Width>0</Width>
+								<FormControlExtension
+									i:nil="true" />
+								<RowSelect>Yes</RowSelect>
+							</AxFormControl>
+							<AxFormControl xmlns=""
+								i:type="AxFormActionPaneControl">
+								<Name>ActionPane</Name>
+								<ElementPosition>1533916890</ElementPosition>
+								<FilterExpression>%1</FilterExpression>
+								<HeightMode>Auto</HeightMode>
+								<Type>ActionPane</Type>
+								<VerticalSpacing>-1</VerticalSpacing>
+								<Width>0</Width>
+								<FormControlExtension
+									i:nil="true" />
+								<Controls>
+									<AxFormControl xmlns=""
+										i:type="AxFormActionPaneTabControl">
+										<Name>ActionPaneTab</Name>
+										<ElementPosition>1431655764</ElementPosition>
+										<FilterExpression>%1</FilterExpression>
+										<HeightMode>Auto</HeightMode>
+										<Type>ActionPaneTab</Type>
+										<VerticalSpacing>-1</VerticalSpacing>
+										<WidthMode>Auto</WidthMode>
+										<FormControlExtension
+											i:nil="true" />
+										<Controls>
+											<AxFormControl xmlns=""
+												i:type="AxFormButtonGroupControl">
+												<Name>buttons</Name>
+												<AutoDeclaration>Yes</AutoDeclaration>
+												<ElementPosition>1431655764</ElementPosition>
+												<FilterExpression>%1</FilterExpression>
+												<HeightMode>Auto</HeightMode>
+												<Left>0</Left>
+												<Type>ButtonGroup</Type>
+												<VerticalSpacing>-1</VerticalSpacing>
+												<WidthMode>Auto</WidthMode>
+												<FormControlExtension
+													i:nil="true" />
+												<Controls>
+													<AxFormControl xmlns=""
+														i:type="AxFormButtonControl">
+														<Name>grantWithChildren</Name>
+														<AutoDeclaration>Yes</AutoDeclaration>
+														<ElementPosition>858993458</ElementPosition>
+														<FilterExpression>%1</FilterExpression>
+														<Height>0</Height>
+														<HeightMode>SizeToAvailable</HeightMode>
+														<Type>Button</Type>
+														<VerticalSpacing>-1</VerticalSpacing>
+														<WidthMode>Auto</WidthMode>
+														<FormControlExtension
+															i:nil="true" />
+														<Border>Depth3D</Border>
+														<ButtonDisplay>TextOnly</ButtonDisplay>
+														<MultiSelect>No</MultiSelect>
+														<Text>Add with Children</Text>
+													</AxFormControl>
+													<AxFormControl xmlns=""
+														i:type="AxFormButtonControl">
+														<Name>grant</Name>
+														<AutoDeclaration>Yes</AutoDeclaration>
+														<ElementPosition>1288490187</ElementPosition>
+														<FilterExpression>%1</FilterExpression>
+														<Height>0</Height>
+														<HeightMode>SizeToAvailable</HeightMode>
+														<Type>Button</Type>
+														<VerticalSpacing>-1</VerticalSpacing>
+														<WidthMode>Auto</WidthMode>
+														<FormControlExtension
+															i:nil="true" />
+														<Bold>Semibold</Bold>
+														<Border>Depth3D</Border>
+														<ButtonDisplay>TextOnly</ButtonDisplay>
+														<MultiSelect>No</MultiSelect>
+														<Text>Add</Text>
+													</AxFormControl>
+													<AxFormControl xmlns=""
+														i:type="AxFormButtonControl">
+														<Name>revoke</Name>
+														<AutoDeclaration>Yes</AutoDeclaration>
+														<ElementPosition>1717986916</ElementPosition>
+														<FilterExpression>%1</FilterExpression>
+														<Height>0</Height>
+														<HeightMode>SizeToAvailable</HeightMode>
+														<Type>Button</Type>
+														<VerticalSpacing>-1</VerticalSpacing>
+														<WidthMode>Auto</WidthMode>
+														<FormControlExtension
+															i:nil="true" />
+														<Bold>Semibold</Bold>
+														<Border>Depth3D</Border>
+														<ButtonDisplay>TextOnly</ButtonDisplay>
+														<MultiSelect>No</MultiSelect>
+														<Text>Remove</Text>
+													</AxFormControl>
+												</Controls>
+												<ArrangeMethod>Vertical</ArrangeMethod>
+												<Caption>@SYS332622</Caption>
+												<FrameType>None</FrameType>
+											</AxFormControl>
+										</Controls>
+										<AlignChild>No</AlignChild>
+										<AlignChildren>No</AlignChildren>
+										<ArrangeMethod>Vertical</ArrangeMethod>
+									</AxFormControl>
+								</Controls>
+								<AlignChild>No</AlignChild>
+								<AlignChildren>No</AlignChildren>
+								<ArrangeMethod>Vertical</ArrangeMethod>
+								<Style>Strip</Style>
+							</AxFormControl>
+						</Controls>
+					</AxFormControl>
+				</Controls>
+				<Style>FastTabs</Style>
+			</AxFormControl>
+		</Controls>
+	</Design>
+	<Parts />
+</AxForm>

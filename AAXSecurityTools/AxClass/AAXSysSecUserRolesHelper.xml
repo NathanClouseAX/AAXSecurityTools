@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxClass xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>AAXSysSecUserRolesHelper</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+class AAXSysSecUserRolesHelper
+{
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>findSecurityRole</Name>
+				<Source><![CDATA[
+    public static SecurityRole findSecurityRole(int64 _securityRoleId, boolean _forUpdate = false)
+    {
+        SecurityRole SecurityRole;
+
+        if(_securityRoleId)
+        {
+            if(_forUpdate)
+            {
+                SecurityRole.selectForUpdate(_forUpdate);
+            }
+        
+            select * from SecurityRole
+                where SecurityRole.RecId == _securityRoleId;
+        }
+
+        return SecurityRole;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>getUsersChildOrgs</Name>
+				<Source><![CDATA[
+    public static Set getUsersChildOrgs(Set hierarchyList)
+    {
+        Set companyList = new Set(Types::Int64);
+        SetEnumerator se;
+        OMHierarchyRelationship hr;
+        OMLegalEntity legalEntity;
+
+
+        se = hierarchyList.getEnumerator();
+        while(se.moveNext())
+        {
+            int64 hierarchyId = se.current();
+            
+            while select ChildOrganization from hr
+                where hr.HierarchyType == hierarchyId
+            {
+                select firstfast RecId from legalEntity where legalEntity.RecId == hr.ChildOrganization;
+                if(legalEntity)
+                {
+                    companyList.add(legalEntity.RecId);
+                    //hierarchyCompanyList.add(legalEntity.RecId);
+                }
+            }
+        }
+
+        return(companyList);
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>getUserChildHierarchyList</Name>
+				<Source><![CDATA[
+    public static Set getUserChildHierarchyList(Set hierarchyList)
+    {
+        Set hierarchyCompanyList = new Set(Types::Int64);
+        SetEnumerator se;
+        OMHierarchyRelationship hr;
+        OMLegalEntity legalEntity;
+
+
+        se = hierarchyList.getEnumerator();
+        while(se.moveNext())
+        {
+            int64 hierarchyId = se.current();
+            
+            while select ChildOrganization from hr
+                where hr.HierarchyType == hierarchyId
+            {
+                select firstfast RecId from legalEntity where legalEntity.RecId == hr.ChildOrganization;
+                if(legalEntity)
+                {
+                    hierarchyCompanyList.add(legalEntity.RecId);
+                }
+            }
+        }
+
+        return(hierarchyCompanyList);
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>getUsersOrgs</Name>
+				<Source><![CDATA[
+    public static Set getUsersOrgs(str _currentUser)
+    {
+        Set companyList = new Set(Types::Int64);
+
+        OMUserRoleOrganization org;
+        SysUserInfo sysUserInfo;
+
+        while select OmHierarchyType, OmInternalOrganization from org
+            join sysUserInfo
+            where sysUserInfo.CompanyRestrictions == NoYes::Yes
+            && sysUserInfo.Id == _currentUser
+            && org.User == _currentUser
+            && org.OMHierarchyType == 0
+        {
+            companyList.add(org.OMInternalOrganization);
+        }
+
+        return(companyList);
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>getUserHierarchyList</Name>
+				<Source><![CDATA[
+    public static Set getUserHierarchyList(str _currentUser )
+    {
+        Set hierarchyList = new Set(Types::Int64);
+
+        OMUserRoleOrganization org;
+        SysUserInfo sysUserInfo;
+
+        while select OMHierarchyType from org
+            join sysUserInfo
+            where sysUserInfo.CompanyRestrictions == NoYes::Yes
+            && sysUserInfo.Id == _currentUser
+            && org.User == _currentUser
+            && org.OMHierarchyType != 0
+        {
+            hierarchyList.add(org.OMHierarchyType);
+        }
+
+        return(hierarchyList);
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>AssignUserRole</Name>
+				<Source><![CDATA[
+    public static void AssignUserRole(str _userId,
+                                  int64 _securityRoleId,
+                                  refRecId _childOrganization,
+                                  int64 _hierarchyId)
+    {
+        OMUserRoleOrganization      org;
+        SecurityUserRoleCondition   userRoleCondition;
+        OMLegalEntity               legalEntity;
+
+
+        org.User = _userId;
+        org.SecurityRole = _securityRoleId;
+        org.SecurityRoleAssignmentRule = 0;
+        org.omInternalOrganization = _childOrganization;
+        org.omHierarchyType = _hierarchyId;
+        org.insert();
+
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>AssignUserRoleWithCondition</Name>
+				<Source><![CDATA[
+    public static void AssignUserRoleWithCondition( str _userId, 
+                                                int64 _securityRoleId, 
+                                                int64 _compId, 
+                                                int64 _userSecurityRoleId,
+                                                Set _hierarchyCompanyList)
+    {
+        OMUserRoleOrganization      org;
+        SecurityUserRoleCondition   userRoleCondition;
+        OMLegalEntity               legalEntity;
+
+        //OmUserRoleOrganization
+        if(_hierarchyCompanyList.in(_compId))
+        {
+            org.User = _userId;
+            org.SecurityRole = _securityRoleId;
+            org.SecurityRoleAssignmentRule = 0;
+            org.omInternalOrganization = _compId;
+            org.omHierarchyType = 0;
+            org.insert();
+        }
+ 
+        //SecurityUserRoleCondition
+        select firstfast LegalEntityId from legalEntity where legalEntity.RecId == _compId;
+        if(legalEntity)
+        {
+            str comp = legalEntity.LegalEntityId;
+
+            userRoleCondition.SecurityUserRole = _userSecurityRoleId;
+            userRoleCondition.DataArea = comp;
+            userRoleCondition.insert();
+
+        }
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>RemoveRolesWithConditions</Name>
+				<Source><![CDATA[
+    public static void RemoveRolesWithConditions(str _userId,
+                                                 //int64 _securityRoleId,
+                                                 int64 _compId,
+                                                 int64 _userSecurityRoleId)
+    {
+        OMUserRoleOrganization      org;
+        SecurityUserRoleCondition   userRoleCondition;
+        OMLegalEntity               legalEntity;
+
+        while select forupdate * from org where org.User == _userId
+        {
+
+        }
+
+        /*
+         select RecId, SecurityRole, User from userRole
+                where userRole.SecurityRole == secRole.RecId &&
+                    userRole.User == _userId;
+        */
+
+        ttsbegin;
+        delete_from org where org.user == _userId;
+
+        select firstfast LegalEntityId from legalEntity where legalEntity.RecId == _compId;
+        if(LegalEntity)
+        {
+            delete_from userRoleCondition where userRoleCondition.SecurityUserRole == _userSecurityRoleId
+                                             && userRoleCondition.DataArea == LegalEntity.LegalEntityId;
+        }
+        ttscommit;
+
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>processUserRoleAssignment</Name>
+				<Source><![CDATA[
+    public static void processUserRoleAssignment(str _userId,
+                                                 int64 _securityRoleId,
+                                                 Set _hierarchyList,
+                                                 Set _companyList,
+                                                 Set _hierarchyCompanyList )
+    {
+        SecurityUserRole userRole;
+        SetEnumerator se;
+        OMHierarchyRelationship hr;
+        int64 _userSecurityRoleId;
+
+
+        select RecId, SecurityRole, User from userRole
+                where userRole.SecurityRole == _securityRoleId &&
+                    userRole.User == _userId;
+            
+        if(userRole)
+        {
+            _userSecurityRoleId = userRole.RecId;
+
+            //Insert hierarchy into OmUserRoleOrganization
+            //Need to insert just one record per hierarchy
+            if(_hierarchyList.elements() > 0)
+            {
+                se = _hierarchyList.getEnumerator();
+                    
+                ttsbegin;
+                while(se.moveNext())
+                {
+                    int64 hierarchyId = se.current();
+                    select firstfast ChildOrganization from hr
+                            where hr.ParentOrganization == 0 && hr.HierarchyType == hierarchyId;
+                    if(hr)
+                    {
+                        AAXSysSecUserRolesHelper::AssignUserRole(_userId, _securityRoleId, hr.ChildOrganization, hierarchyId);
+                    }
+                }
+                ttscommit;
+            }
+
+            //now assign company restrictions
+            if(_companyList.elements() > 0)
+            {
+                se = _companyList.getEnumerator();
+               
+                ttsbegin;
+                while(se.moveNext())
+                {
+                    int64 compId = se.current();
+
+                    //TODO: Add some logging or output
+                    AAXSysSecUserRolesHelper::AssignUserRoleWithCondition(_userId, _securityRoleId, compId, _userSecurityRoleId, _hierarchyCompanyList);
+
+                }
+                ttscommit;
+            }
+
+        }
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>assignUserOrgsToUserByRole</Name>
+				<Source><![CDATA[
+    public static void assignUserOrgsToUserByRole(UserId _userId, SecurityRole _SecurityRole)
+    {
+        Set companyList = new Set(Types::Int64);
+        Set hierarchyCompanyList = new Set(Types::Int64);
+        Set hierarchyList = new Set(Types::Int64);
+
+        //get
+        str currentUser = curUserId();
+        int64 _userSecurityRoleId = 0;
+        
+        //get company restrictions assigned to user performing user role assignment
+        companyList = AAXSysSecUserRolesHelper::getUsersOrgs(_userId);
+        
+        //check if user is assigned a security organizational hierarchy
+        hierarchyList = AAXSysSecUserRolesHelper::getUserHierarchyList(_userId);
+
+        //combine companies assigned directly and from hierarchies
+        companyList = Set::union(companyList, AAXSysSecUserRolesHelper::getUsersChildOrgs(hierarchyList));
+
+        //get hiierarchy company list
+        hierarchyCompanyList = AAXSysSecUserRolesHelper::getUserChildHierarchyList(hierarchyList);
+        
+        //process stuff
+        AAXSysSecUserRolesHelper::processUserRoleAssignment(_userId, _SecurityRole.recid,hierarchyList, companyList, hierarchyCompanyList);
+        
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+</AxClass>

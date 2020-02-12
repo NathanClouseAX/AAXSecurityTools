@@ -1,0 +1,6 @@
+﻿NewLabel0=Label files created on 01/10/2020 09:43:44 for label file Id AAXSecurityTools and language en-US
+ ;Label file comment - see above label
+AssignByTemplate=Assign Template Organizations
+SecurityOrganizationAssignmentTemplate=Security Organization Assignment Template
+AssignedSecurityOrganizationAssignmentTemplateValues=Assigned Security Organization Assignment Template Values
+UserRoleAssignmentRestricted=User role assignment restricted to the following companies: 

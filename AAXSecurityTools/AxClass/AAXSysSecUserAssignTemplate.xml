@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxClass xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>AAXSysSecUserAssignTemplate</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+class AAXSysSecUserAssignTemplate extends RunBaseBatch
+{
+    DialogField dialogUserId;
+    DialogField dialogAAXSysSecUserAssignmentOperation;
+    Str UserId;
+    AAXSysSecUserAssignmentOperation operation;
+    
+    UserInfo UserInfo;
+
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>parmUserInfo</Name>
+				<Source><![CDATA[
+    public UserInfo parmUserInfo(UserInfo _UserInfo = UserInfo)
+    {
+        UserInfo = _UserInfo;
+        return(UserInfo);
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>main</Name>
+				<Source><![CDATA[
+    //options will be additive or exclusive
+    public static void main(Args args)
+    {
+        AAXSysSecUserAssignTemplate AAXSysSecUserAssignTemplate = new AAXSysSecUserAssignTemplate();
+
+        UserInfo UserInfo;
+
+        if (args.caller() && args.record() && args.record().TableId == tableNum(UserInfo))
+        {
+            UserInfo = args.record() as UserInfo;
+            AAXSysSecUserAssignTemplate.parmUserInfo(UserInfo);
+
+            if (AAXSysSecUserAssignTemplate.prompt())
+            {
+                AAXSysSecUserAssignTemplate.runOperation();
+                
+            }
+        }
+        else
+        {
+            if (AAXSysSecUserAssignTemplate.prompt())
+            {
+                AAXSysSecUserAssignTemplate.runOperation();
+            }
+        }
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>canGoBatchJournal</Name>
+				<Source><![CDATA[
+    public boolean canGoBatchJournal()
+    {
+        return false;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>canGoBatch</Name>
+				<Source><![CDATA[
+    public boolean canGoBatch()
+    {
+        return false;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>dialog</Name>
+				<Source><![CDATA[
+    /// <summary>
+    /// Constructs the dialog form that is called by the class.
+    /// </summary>
+    /// <returns>
+    /// The dialog form object that is constructed by this method.
+    /// </returns>
+    public Object dialog()
+    {
+        UserInfo localUserInfo = this.parmUserInfo();
+
+        Dialog Dialog = new Dialog("Apply Organization Template");
+
+        dialogUserId = Dialog.addField(extendedTypeStr(UserId));
+        dialogUserId.enabled(false);
+        if(localUserInfo)
+        {
+            dialogUserId.value(localUserInfo.Id);
+            dialogUserId.visible(true);
+        }
+        else
+        {
+            dialogUserId.visible(false);
+        }
+
+        
+        dialogAAXSysSecUserAssignmentOperation = Dialog.addField(enumStr(AAXSysSecUserAssignmentOperation));
+        dialog = this.dialogInternal(dialog);
+
+        return dialog;
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>getFromDialog</Name>
+				<Source><![CDATA[
+    public boolean getFromDialog()
+    {
+        userId = dialogUserId.value();
+        operation = dialogAAXSysSecUserAssignmentOperation.value();
+
+        return super();
+    }
+
+]]></Source>
+			</Method>
+			<Method>
+				<Name>run</Name>
+				<Source><![CDATA[
+    public void run()
+    {
+        SecurityUserRole SecurityUserRole;
+        SecurityRole SecurityRole;
+       
+        switch(operation)
+        {
+            case AAXSysSecUserAssignmentOperation::Inclusive:
+                switch(userId)
+                {
+                    case "":
+                        //all users
+                        while select * from SecurityUserRole
+                            where SecurityUserRole.User == UserId
+                        {
+                            select * from SecurityRole where SecurityRole.RecId == SecurityUserRole.SecurityRole;
+
+                            AAXSysSecUserRolesHelper::assignUserOrgsToUserByRole(UserId, SecurityRole);
+                        }
+                        break;
+                    Default:
+                        //specific user
+
+                        break;
+                }
+                //get all roles assign to the user
+                
+                //loop through those roles and assign ords
+                break;
+
+            case AAXSysSecUserAssignmentOperation::Exclusive:
+                //remove all orgs assigned to the user
+                break;
+        }
+
+        //cover 1 user
+
+        //cover all users
+
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+</AxClass>

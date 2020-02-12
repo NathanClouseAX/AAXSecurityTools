@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxLabelFile xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>AAXSecurityTools_en-US</Name>
+	<LabelContentFileName>AAXSecurityTools.en-US.label.txt</LabelContentFileName>
+	<LabelFileId>AAXSecurityTools</LabelFileId>
+	<RelativeUriInModelStore>AAXSecurityTools\AAXSecurityTools\AxLabelFile\LabelResources\en-US\AAXSecurityTools.en-US.label.txt</RelativeUriInModelStore>
+</AxLabelFile>

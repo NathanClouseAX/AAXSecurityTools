@@ -17,6 +17,21 @@
 			</FormControl>
 			<Parent>GeneralDetails</Parent>
 		</AxFormExtensionControl>
+		<AxFormExtensionControl xmlns="">
+			<Name>FormExtensionControleujd42pj1</Name>
+			<FormControl xmlns=""
+				i:type="AxFormStringControl">
+				<Name>SysUserInfo_AAXSysSecOrgAssignmentTemplateName</Name>
+				<Type>String</Type>
+				<Visible>No</Visible>
+				<FormControlExtension
+					i:nil="true" />
+				<DataField>AAXSysSecOrgAssignmentTemplateName</DataField>
+				<DataSource>SysUserInfo</DataSource>
+				<Label>Organization Template</Label>
+			</FormControl>
+			<Parent>GeneralDetails</Parent>
+		</AxFormExtensionControl>
 	</Controls>
 	<DataSourceModifications />
 	<DataSourceReferences />
@@ -26,7 +41,13 @@
 			<Table>SysUserInfo</Table>
 			<Fields>
 				<AxFormDataSourceField>
+					<DataField>AAXSysSecOrgAssignmentTemplateName</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
 					<DataField>AutomaticUrlUpdate</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>CompanyRestrictions</DataField>
 				</AxFormDataSourceField>
 				<AxFormDataSourceField>
 					<DataField>compilerTarget</DataField>
