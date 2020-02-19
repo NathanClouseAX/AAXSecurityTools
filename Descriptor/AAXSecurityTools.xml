@@ -15,6 +15,9 @@
 		<d2p1:string>ApplicationFoundation</d2p1:string>
 		<d2p1:string>ApplicationPlatform</d2p1:string>
 		<d2p1:string>Directory</d2p1:string>
+		<d2p1:string>Personnel</d2p1:string>
+		<d2p1:string>PersonnelCore</d2p1:string>
+		<d2p1:string>PersonnelManagement</d2p1:string>
 	</ModuleReferences>
 	<Name>AAXSecurityTools</Name>
 	<Publisher>NathanClouseAX</Publisher>

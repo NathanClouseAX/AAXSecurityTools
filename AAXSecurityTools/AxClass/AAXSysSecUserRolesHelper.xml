@@ -5,9 +5,57 @@
 		<Declaration><![CDATA[
 class AAXSysSecUserRolesHelper
 {
+
 }
 ]]></Declaration>
 		<Methods>
+			<Method>
+				<Name>autoAssignUserEmployedOrgs</Name>
+				<Source><![CDATA[
+    public static void autoAssignUserEmployedOrgs(UserId _Userid, int64 _securityRoleId)
+    {
+        HCMEmployment HCMEmployment;
+        HCMWorker HCMWorker;
+        CompanyInfo CompanyInfo;
+        DirPersonUser existingDirPersonUser;
+        SecurityUserRole userRole;
+        Set companyList = new Set(Types::Int64);
+
+        int64 _userSecurityRoleId;
+
+        select RecId, SecurityRole, User from userRole
+                where userRole.SecurityRole == _securityRoleId &&
+                    userRole.User == _userId;
+
+        _userSecurityRoleId = userRole.RecId;
+
+        PartyIProvider partyProvider = PartyProviderFactory::getPartyProvider();
+
+        if (partyProvider)
+        {
+            existingDirPersonUser = partyProvider.findPersonUser(_Userid) as DirPersonUser;
+
+            HCMWorker = HCMWorker::findByPerson(existingDirPersonUser.PersonParty);
+
+            //is that worker employed?
+            //if so, in what entities?
+            while select * from HCMEmployment
+                where HCMEmployment.Worker == HCMWorker.RecId
+            {
+                CompanyInfo = CompanyInfo::findRecId(HCMEmployment.LegalEntity);
+                if(CompanyInfo)
+                {
+                    companyList.add(CompanyInfo.RecId);
+                    //Info(CompanyInfo.DataArea);
+
+                    AAXSysSecUserRolesHelper::AssignUserRoleWithCondition(_userId, _securityRoleId, CompanyInfo.RecId, _userSecurityRoleId, companyList );
+                }
+            }
+        }
+    }
+
+]]></Source>
+			</Method>
 			<Method>
 				<Name>findSecurityRole</Name>
 				<Source><![CDATA[

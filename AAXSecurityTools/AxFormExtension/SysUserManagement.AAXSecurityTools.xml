@@ -32,6 +32,20 @@
 			</FormControl>
 			<Parent>GeneralDetails</Parent>
 		</AxFormExtensionControl>
+		<AxFormExtensionControl xmlns="">
+			<Name>FormExtensionControlgqtnorg41</Name>
+			<FormControl xmlns=""
+				i:type="AxFormCheckBoxControl">
+				<Name>SysUserInfo_EmploymentRestrictions</Name>
+				<Type>CheckBox</Type>
+				<FormControlExtension
+					i:nil="true" />
+				<DataField>EmploymentRestrictions</DataField>
+				<DataSource>SysUserInfo</DataSource>
+				<Label>User Role Employment Restrictions</Label>
+			</FormControl>
+			<Parent>GeneralDetails</Parent>
+		</AxFormExtensionControl>
 	</Controls>
 	<DataSourceModifications />
 	<DataSourceReferences />
@@ -75,6 +89,9 @@
 				</AxFormDataSourceField>
 				<AxFormDataSourceField>
 					<DataField>Email</DataField>
+				</AxFormDataSourceField>
+				<AxFormDataSourceField>
+					<DataField>EmploymentRestrictions</DataField>
 				</AxFormDataSourceField>
 				<AxFormDataSourceField>
 					<DataField>EnhancedTabSequence</DataField>

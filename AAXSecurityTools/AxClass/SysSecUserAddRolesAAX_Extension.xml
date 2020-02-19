@@ -61,6 +61,19 @@ final class SysSecUserAddRolesAAX_Extension
             }
         }
 
+        //TODO: get rid of the repeat
+        if(SysUserInfo::find(UserId).EmploymentRestrictions)
+        {
+            secRole = securityRole_ds.getFirst(true);
+
+            //TODO: Add logging
+            while(secRole)
+            {
+                AAXSysSecUserRolesHelper::autoAssignUserEmployedOrgs(userId, secRole.RecId);
+                secRole = securityRole_ds.getNext() as SecurityRole;
+            }
+        }
+
     }
 
 ]]></Source>

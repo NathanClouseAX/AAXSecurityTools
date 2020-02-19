@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AxClass xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+	<Name>AAXUserEmployeeHelper</Name>
+	<SourceCode>
+		<Declaration><![CDATA[
+class AAXUserEmployeeHelper
+{
+}
+]]></Declaration>
+		<Methods>
+			<Method>
+				<Name>main</Name>
+				<Source><![CDATA[
+    public static void main(Args _args)
+    {
+        UserInfo UserInfo;
+        HCMEmployment HCMEmployment;
+        HCMWorker HCMWorker;
+        CompanyInfo CompanyInfo;
+
+        Set companyList = new Set(Types::Int64);
+
+        //benjamin is employeed in USMF only
+        select * from userInfo where userInfo.id == 'BENJAMIN';
+         
+        DirPersonUser existingDirPersonUser; 
+
+        PartyIProvider partyProvider = PartyProviderFactory::getPartyProvider();
+
+        if (partyProvider)
+        {
+            //get ben's dirPersonUser
+            existingDirPersonUser = partyProvider.findPersonUser(UserInfo.id) as DirPersonUser;
+
+            //Get ben's worker
+            HCMWorker = HCMWorker::findByPerson(existingDirPersonUser.PersonParty);
+
+            //is that worker employed?
+            //if so, in what entities?
+            while select * from HCMEmployment
+                where HCMEmployment.Worker == HCMWorker.RecId
+            {
+
+                CompanyInfo = CompanyInfo::findRecId(HCMEmployment.LegalEntity);
+                if(CompanyInfo)
+                {
+                    companyList.add(CompanyInfo.RecId);
+                    Info(CompanyInfo.DataArea);
+                }
+            }
+        }
+    }
+
+]]></Source>
+			</Method>
+		</Methods>
+	</SourceCode>
+</AxClass>

@@ -15,6 +15,11 @@
 			<Name>AAXSysSecOrgAssignmentTemplateName</Name>
 			<ExtendedDataType>AAXSysSecOrgAssignmentTemplateName</ExtendedDataType>
 		</AxTableField>
+		<AxTableField xmlns=""
+			i:type="AxTableFieldEnum">
+			<Name>EmploymentRestrictions</Name>
+			<EnumType>NoYes</EnumType>
+		</AxTableField>
 	</Fields>
 	<FullTextIndexes />
 	<Indexes />
